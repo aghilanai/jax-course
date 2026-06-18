@@ -22,7 +22,7 @@ Open this folder as the Cursor workspace (`File → Open Folder → jax-course`)
 | Episode | Topic | Instructor | Student |
 |---------|-------|------------|---------|
 | 0 | Arrays, shapes, immutability | [solution](./ep00/solution.ipynb) | [student](./ep00/student.ipynb) |
-| 1 | PRNG keys, nested `params`, broadcasting | [solution](./ep01/solution.ipynb) | [workbook](./ep01/workbook.ipynb) |
+| 1 | PRNG keys, `params`, broadcasting | [solution](./ep01/solution.ipynb) | [student](./ep01/student.ipynb) |
 | 2 | `jit`, `vmap`, jaxpr, timing matmul | [solution](./ep02/solution.ipynb) | [student](./ep02/student.ipynb) |
 | … | *see [syllabus](./syllabus.md)* | | |
 | 10 | **Module 1 capstone** — [JAX Pytrees](https://docs.jax.dev/en/latest/pytrees.html) on GPT `params` | *planned* | *planned* |

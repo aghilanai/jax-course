@@ -102,7 +102,7 @@ Next: PRNG keys, a weight dict, and `jit`.
 
 ### Learning objectives
 - Create typed PRNG keys with `jax.random.key` and split them with `jax.random.split` before every random draw
-- Package a simple affine layer as `params = {"W": ..., "b": ...}` and run `y = x @ W + b`
+- Package a simple linear layer as `params = {"w": ..., "b": ...}` and run `y = x @ w + b`
 - Wrap a pure forward function in `jax.jit` and explain tracing vs execution
 
 ### Narrative hook
@@ -112,14 +112,14 @@ Before we train anything, we need two JAX habits: **explicit randomness** (no hi
 | Concept | Depth | New vs review |
 |---------|-------|---------------|
 | PRNG keys: `key`, `split`, consume subkey | practice | new |
-| Params as `dict` (`W`, `b`) | practice | new |
+| Params as `dict` (`w`, `b`) | practice | new |
 | Broadcasting (`+ b` over batch) | intro | new |
 | `jax.jit` tracing (preview) | practice | new |
 
 ### Math & intuition (on whiteboard)
 - PRNG mental model: key is state; `key, subkey = split(key)`; random ops **consume** `subkey`—never reuse
-- Affine layer: \(y = x W + b\) with shapes \(x \in \mathbb{R}^{B \times D_{in}}\), \(W \in \mathbb{R}^{D_{in} \times D_{out}}\), \(b \in \mathbb{R}^{D_{out}}\)
-- **Broadcasting mini-section:** \(b\) has shape `(D_out,)` and broadcasts across batch rows of `x @ W` — align trailing dims; compare with [`jnp.broadcast_shapes`](https://docs.jax.dev/en/latest/_autosummary/jax.numpy.broadcast_shapes.html). **Rules reference:** [NumPy broadcasting](https://numpy.org/doc/stable/user/basics.broadcasting.html) (JAX follows the same rules)
+- Linear layer: \(y = x w + b\) with shapes \(x \in \mathbb{R}^{B \times D_{in}}\), \(w \in \mathbb{R}^{D_{in} \times D_{out}}\), \(b \in \mathbb{R}^{D_{out}}\)
+- **Broadcasting mini-section:** \(b\) has shape `(D_out,)` and broadcasts across batch rows of `x @ w` — align trailing dims; compare with [`jnp.broadcast_shapes`](https://docs.jax.dev/en/latest/_autosummary/jax.numpy.broadcast_shapes.html). **Rules reference:** [NumPy broadcasting](https://numpy.org/doc/stable/user/basics.broadcasting.html) (JAX follows the same rules)
 - `jit` preview: first call records ops; details + jaxpr in Episode 2
 
 ### Notebook — mini-section: Broadcasting
@@ -127,12 +127,12 @@ Before we train anything, we need two JAX habits: **explicit randomness** (no hi
 Short markdown cell + 2–3 code cells after `forward`:
 
 1. **Rules (link out):** JAX uses [NumPy broadcasting rules](https://numpy.org/doc/stable/user/basics.broadcasting.html) — compare shapes from the **right**; dimensions match if equal or one is `1`.
-2. **Our affine case:** `x @ W` is `(B, D_out)`; `b` is `(D_out,)` → `b` broadcasts to every row (conceptually `b` becomes `(1, D_out)` then `(B, D_out)`).
+2. **Our case:** `x @ w` is `(B, D_out)`; `b` is `(D_out,)` → `b` broadcasts to every row (conceptually `b` becomes `(1, D_out)` then `(B, D_out)`).
 3. **Check shapes:** `jnp.broadcast_shapes((B, D_out), (D_out,))` → `(B, D_out)`; show a failing pair `(3, 4)` vs `(4, 1)` vs `(4,)`.
 4. **Takeaway:** bias add is cheap — no extra storage for the broadcast; XLA fuses it with the matmul when `jit`ted.
 
 ### Code we build
-- **New files/functions:** `models/affine.py` — `init_params(key, d_in, d_out)`, `forward(params, x)`; demo `jitted_forward = jit(forward)`
+- **New files/functions:** `models/linear.py` — `init_params(key, d_in, d_out)`, `forward(params, x)`; demo `jitted_forward = jit(forward)`
 - **Lines of core logic (approx):** ~45
 - **Key JAX APIs:** `jax.random.key`, `jax.random.split`, `jax.random.normal`, `jax.jit`
 - **Repo tag:** `ep01-keys-jit`
@@ -151,17 +151,17 @@ Short markdown cell + 2–3 code cells after `forward`:
 - **Compute:** Second `jit` call noticeably faster than first (compile once)
 
 ### Compute sidebar (required)
-- **Question answered:** What is the FLOP cost of one forward pass \(y = xW + b\) for batch size `B`?
+- **Question answered:** What is the FLOP cost of one forward pass \(y = xw + b\) for batch size `B`?
 - **Analysis type:** FLOP accounting
 - **Concrete deliverable:** `2 * B * D_in * D_out` for matmul + `B * D_out` for bias broadcast
 
 ### Running demo
-- **Input:** `B=64`, `D_in=10`, `D_out=10`, `key=jr.key(0)`; init `W,b` with split subkeys; compare eager vs `jit`
+- **Input:** `B=64`, `D_in=10`, `D_out=10`, `key=jr.key(0)`; init `w,b` with split subkeys; compare eager vs `jit`
 - **Expected output:** Bitwise match eager/jit; timing: compile once, then fast steps
 - **Common failure modes:** Reusing a key after `split`; in-place mutation inside a `jit`ted function
 
 ### Exercise (student does alone)
-- **Task:** `split` a root key into subkeys for `W` and `b` init; verify a second run with the same root key is identical.
+- **Task:** `split` a root key into subkeys for `w` and `b` init; verify a second run with the same root key is identical.
 - **Hint:** `key, k_w, k_b = jr.split(key, 3)`
 - **Solution sketch:** Never call `normal` on the root key after splitting.
 
@@ -182,7 +182,7 @@ We can compile a forward pass—next, vectorize with `vmap`, `jit` a matmul, and
 **Hardware:** CPU | Single GPU
 
 ### Learning objectives
-- Compose `jax.jit` with `jax.vmap` to compile a batched matmul (or batched affine forward)
+- Compose `jax.jit` with `jax.vmap` to compile a batched matmul (or batched forward from Episode 1)
 - Time eager vs `jit` matmul with `timeit` (and `block_until_ready` on accelerator)
 - Separate compile time from steady-state run time
 - Explain the compile pipeline: **trace → jaxpr → StableHLO → XLA → machine code**
