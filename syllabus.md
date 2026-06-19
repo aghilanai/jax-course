@@ -75,21 +75,27 @@ The purity constraint is not a limitation — it is what makes compilation, diff
 
 ### Concepts
 
-- Tracing: JAX runs your Python function once with abstract `ShapedArray` values
-- The JAX expression (jaxpr): a functional IR capturing the computation graph
-- XLA HLO: what the jaxpr compiles down to, key ops (`dot`, `reduce`, `broadcast`)
-- Compilation cache: when JIT reuses vs. retraces (shape changes, Python side-effects)
-- **Static vs traced:** arrays traced by shape/dtype; Python scalars that control structure need `static_argnums`
-- `jax.make_jaxpr()` — inspecting the trace before execution
-- `jax.jit` with `static_argnums` for non-tensor arguments
+- How transformations work: primitives, tracers, and the jaxpr as a side-effect-free IR
+- Pure functions: Python side effects (`append`, `print`) run at trace time but are absent from the jaxpr
+- Python control flow: branches taken depend on static attributes (`ndim`, `shape`) — not runtime values
+- Why `jit`: fuse op-by-op dispatch into one XLA-optimized kernel (SELU timing demo)
+- Tracing → StableHLO → compiled executable; warm-up and `block_until_ready()`
+- Compilation cache: retrace on shape change; static args trigger recompile per distinct value
+- **Why not `jit` everything:** `TracerBoolConversionError` when Python `if`/`while` depend on traced values
+- Partial `jit`: compile the hot inner body; use `jax.lax.cond` / array ops when possible
+- **Static vs traced:** `static_argnums`, `static_argnames`, decorator factory `@jax.jit(static_argnames=[...])`
+- JIT cache pitfalls: don't wrap `partial`/`lambda` in a loop — reuse the same function object
+- `jax.make_jaxpr()` and `jax.debug.print()` for inspection and debug output inside `jit`
 
 ### Exercises
 
 - Print the jaxpr of a 3-layer MLP with `jax.make_jaxpr()`
+- Show a side effect that runs at trace time but is missing from the jaxpr
+- Trigger `TracerBoolConversionError` with value-dependent Python control flow
+- Fix a loop with `static_argnums` or `static_argnames`
 - Trigger a retrace by changing input shape — count compilations with a counter inside the function
-- Use `static_argnums` to pass a Python integer (e.g. `num_heads`) into a jitted function
-- Measure wall-clock time: first JIT call (compile + run) vs. second call (run only)
-- Write a function with a Python `print` inside — observe when it fires
+- Measure wall-clock time: first JIT call (compile + run) vs. steady state (warm up first)
+- Compare `jit(partial(f))` in a loop vs. reusing `jit(f)` — which recompiles?
 
 ### Key insight
 
