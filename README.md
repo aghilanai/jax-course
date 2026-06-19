@@ -1,6 +1,6 @@
-# LLMs in JAX: Zero to Hero
+# ML Training Systems — Pure JAX (Part I)
 
-Course materials for [**LLMs in JAX: Zero to Hero + Compute Analysis**](./syllabus.md).
+Course materials for [**ML Training Systems**](./syllabus.md) — train a transformer, understand every byte.
 
 ## Setup
 
@@ -17,18 +17,32 @@ Open this folder as the Cursor workspace (`File → Open Folder → jax-course`)
 2. **Reload** — `Cmd+Shift+P` → *Developer: Reload Window* if completions are empty.
 3. `.vscode/settings.json` points Pylance at `.venv` in this repo.
 
-## Episodes
+## Part I — Chapter 1: The JAX Programming Model
 
 | Episode | Topic | Instructor | Student |
 |---------|-------|------------|---------|
-| 0 | Arrays, shapes, immutability | [solution](./ep00/solution.ipynb) | [student](./ep00/student.ipynb) |
-| 1 | PRNG keys, `params`, broadcasting | [solution](./ep01/solution.ipynb) | [student](./ep01/student.ipynb) |
-| 2 | `jit`, `vmap`, jaxpr, timing matmul | [solution](./ep02/solution.ipynb) | [student](./ep02/student.ipynb) |
-| … | *see [syllabus](./syllabus.md)* | | |
-| 10 | **Module 1 capstone** — [JAX Pytrees](https://docs.jax.dev/en/latest/pytrees.html) on GPT `params` | *planned* | *planned* |
+| 1 | JAX as a Functional Array Accelerator | [solution](./ep01/solution.ipynb) | [student](./ep01/student.ipynb) |
+| 2 | JIT, Tracing, and the Jaxpr | [solution](./ep02/solution.ipynb) | [student](./ep02/student.ipynb) |
+| 3 | Automatic Differentiation | [solution](./ep03/solution.ipynb) | [student](./ep03/student.ipynb) |
+| 4 | `vmap`, `scan`, and Vectorization | [solution](./ep04/solution.ipynb) | [student](./ep04/student.ipynb) |
+| 5 | Pytrees and SGD | [solution](./ep05/solution.ipynb) | [student](./ep05/student.ipynb) |
 
 **Workflow:** Karpathy-style — one idea per episode, short exercise at the end.
 
-## Shared code
+### Regenerate student notebooks
 
-- `data/reflecting_digits.py` — spine dataset (Episode 5+).
+After editing `solution.ipynb`:
+
+```bash
+python scripts/build_student.py ep01
+```
+
+Or rebuild all of Chapter 1 from the generator:
+
+```bash
+python scripts/build_chapter1.py
+```
+
+## Syllabus source
+
+Full five-part plan: [Claude artifact](https://claude.ai/public/artifacts/326f2023-cecb-45db-959b-c97a870cafdf)
