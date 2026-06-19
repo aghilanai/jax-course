@@ -13,16 +13,28 @@ INSTRUCTOR = "**Instructor notebook** · run top-to-bottom before recording."
 STUDENT = "**Student workbook** · code along with the video."
 
 
-def studentize(notebook: dict) -> dict:
+def _markdown_text(cell: dict) -> str:
+    src = cell.get("source", [])
+    return "".join(src) if isinstance(src, list) else src
+
+
+def studentize(notebook: dict, existing: dict | None = None) -> dict:
     out = deepcopy(notebook)
-    for cell in out["cells"]:
+    existing_cells = existing.get("cells", []) if existing else []
+    same_layout = len(existing_cells) == len(out["cells"])
+    for i, cell in enumerate(out["cells"]):
         if cell["cell_type"] == "markdown":
-            src = cell.get("source", [])
-            text = "".join(src) if isinstance(src, list) else src
+            if (
+                same_layout
+                and existing_cells[i]["cell_type"] == "markdown"
+            ):
+                cell["source"] = deepcopy(existing_cells[i]["source"])
+                continue
+            text = _markdown_text(cell)
             text = text.replace(INSTRUCTOR, STUDENT)
             text = text.replace("*(Solution below.)*\n", "")
             text = text.replace("*(Solution below.)*", "")
-            cell["source"] = [text] if text else src
+            cell["source"] = [text] if text else cell.get("source", [])
         elif cell["cell_type"] == "code":
             cell["source"] = PLACEHOLDER.copy()
             cell["outputs"] = []
@@ -38,7 +50,8 @@ def main() -> None:
     solution = ep / "solution.ipynb"
     student = ep / "student.ipynb"
     data = json.loads(solution.read_text())
-    student.write_text(json.dumps(studentize(data), indent=1) + "\n")
+    existing = json.loads(student.read_text()) if student.exists() else None
+    student.write_text(json.dumps(studentize(data, existing), indent=1) + "\n")
     print(f"wrote {student}")
 
 
