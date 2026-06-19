@@ -69,7 +69,7 @@ Why JAX is not NumPy, and why that matters for ML.
 **JAX docs:** [JAX 101](https://jax.readthedocs.io/en/latest/jax-101.html) · [`jax.numpy`](https://jax.readthedocs.io/en/latest/jax.numpy.html) · [Pseudorandom numbers](https://docs.jax.dev/en/latest/random-numbers.html) · [NumPy broadcasting](https://numpy.org/doc/stable/user/basics.broadcasting.html) · [Async dispatch](https://jax.readthedocs.io/en/latest/async_dispatch.html)
 """
     ),
-    code("import time\n\nimport jax\nimport jax.numpy as jnp\nimport jax.random as jr\nimport numpy as np"),
+    code("import jax\nimport jax.numpy as jnp\nimport jax.random as jr\nimport numpy as np"),
     md(
         """## Pure functions and immutability
 
@@ -117,10 +117,10 @@ a_np = np.random.randn(M, K).astype(np.float32)
 b_np = np.random.randn(K, N).astype(np.float32)
 
 # NumPy — eager on CPU
-t0 = time.perf_counter()
 c_np = a_np @ b_np
-t_np = time.perf_counter() - t0
-print(f"NumPy matmul: {t_np * 1000:.2f} ms, shape {c_np.shape}")"""
+print("NumPy matmul shape:", c_np.shape)
+
+%timeit a_np @ b_np"""
     ),
     code(
         """key = jax.random.key(0)
@@ -129,12 +129,12 @@ a_jnp = jax.random.normal(k_a, (M, K))
 b_jnp = jax.random.normal(k_b, (K, N))
 
 # JAX — dispatches asynchronously; block to measure
-t0 = time.perf_counter()
 c_jnp = a_jnp @ b_jnp
 jax.block_until_ready(c_jnp)
-t_jnp = time.perf_counter() - t0
-print(f"JAX matmul:   {t_jnp * 1000:.2f} ms, shape {c_jnp.shape}")
-print("match (same problem size):", np.allclose(np.array(c_jnp), np.array(a_jnp @ b_jnp), atol=1e-4))"""
+print("JAX matmul shape:", c_jnp.shape)
+print("match (same problem size):", np.allclose(np.array(c_jnp), np.array(a_jnp @ b_jnp), atol=1e-4))
+
+%timeit jax.block_until_ready(a_jnp @ b_jnp)"""
     ),
     md(
         """## Device placement
@@ -155,30 +155,14 @@ print("array device:", x_device.devices())"""
 JAX returns before work finishes on accelerator hardware. Always call `jax.block_until_ready(...)` before stopping a timer."""
     ),
     code(
-        """def bench(fn, *args, repeat=5):
-    times = []
-    for _ in range(repeat):
-        t0 = time.perf_counter()
-        out = fn(*args)
-        times.append(time.perf_counter() - t0)
-    return min(times) * 1000
-
-
-def matmul_no_block(a, b):
-    return a @ b
-
-
-def matmul_block(a, b):
-    return jax.block_until_ready(a @ b)
-
-
-a = jax.random.normal(jax.random.key(1), (2048, 2048))
+        """a = jax.random.normal(jax.random.key(1), (2048, 2048))
 b = jax.random.normal(jax.random.key(2), (2048, 2048))
 
-raw_ms = bench(matmul_no_block, a, b)
-blocked_ms = bench(matmul_block, a, b)
-print(f"without block_until_ready: {raw_ms:.2f} ms  (may under-report on GPU)")
-print(f"with    block_until_ready: {blocked_ms:.2f} ms")"""
+print("without block_until_ready (may under-report on GPU):")
+%timeit a @ b
+
+print("with block_until_ready:")
+%timeit jax.block_until_ready(a @ b)"""
     ),
     md(
         """## Broadcasting
