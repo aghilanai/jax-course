@@ -24,7 +24,7 @@ Open this folder as the Cursor workspace (`File → Open Folder → jax-course`)
 | 1 | JAX as a Functional Array Accelerator | [solution](./ep01/solution.ipynb) | [student](./ep01/student.ipynb) |
 | 2 | JIT, Tracing, and the Jaxpr | [solution](./ep02/solution.ipynb) | [student](./ep02/student.ipynb) |
 | 3 | Automatic Differentiation | [solution](./ep03/solution.ipynb) | [student](./ep03/student.ipynb) |
-| 4 | `vmap`, `scan`, and Vectorization | [solution](./ep04/solution.ipynb) | [student](./ep04/student.ipynb) |
+| 4 | Control Flow with JIT | [solution](./ep04/solution.ipynb) | [student](./ep04/student.ipynb) |
 | 5 | Pytrees and SGD | [solution](./ep05/solution.ipynb) | [student](./ep05/student.ipynb) |
 
 **Workflow:** Karpathy-style — one idea per episode, short exercise at the end.

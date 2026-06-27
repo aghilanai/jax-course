@@ -33,7 +33,7 @@ Train a transformer. Understand every byte. Five parts, 23 chapters, pure JAX fr
 | [1](./ep01/solution.ipynb) | 1.1 | JAX as a Functional Array Accelerator |
 | [2](./ep02/solution.ipynb) | 1.2 | JIT, Tracing, and the Jaxpr |
 | [3](./ep03/solution.ipynb) | 1.3 | Automatic Differentiation |
-| [4](./ep04/solution.ipynb) | 1.4 | `vmap`, `scan`, and Vectorization |
+| [4](./ep04/solution.ipynb) | 1.4 | Control Flow with JIT |
 | [5](./ep05/solution.ipynb) | 1.5 | Pytrees and SGD |
 
 ---
@@ -128,29 +128,35 @@ Use `value_and_grad` for scalar training losses. Reach for `vjp` when the forwar
 
 ---
 
-## Episode 4 — `vmap`, `scan`, and Vectorization
+## Episode 4 — Control Flow with JIT
 
 **Prerequisites:** Episodes 1–3  
 **Hardware:** CPU | Single GPU
 
+**Source:** [Control flow and logical operators with JIT](https://docs.jax.dev/en/latest/control-flow.html)
+
 ### Concepts
 
-- XLA vectorization preview — why batching beats Python loops
-- `jax.vmap`: lifts a per-sample function to a batched function
-- `in_axes`: share `params`, batch over inputs
-- `jit` ∘ `vmap`: one compiled batched kernel
-- `jax.lax.scan` vs Python `for` — prefix sum as carry loop
-- Timing: loop vs `vmap` vs `scan`
+- Python control flow under `jit` — compile-time path selection
+- `TracerBoolConversionError` — value-dependent `if` / `and` / `or`
+- `static_argnames` — concrete values at trace time; static unrolling
+- Value-dependent shapes — `jnp.ones((length,))` inside `jit`
+- Side effects: `print` shows tracers inside `jit`
+- Structured primitives: `lax.cond`, `lax.while_loop`, `lax.fori_loop`, `lax.scan`
+- `jit` vs `grad` compatibility table
+- `jnp.logical_and` vs Python `and` (no short-circuit)
+- `grad` with Python control flow (no `jit`) — works fine
 
 ### Exercises
 
-- `vmap` a single-sample forward; verify against a Python loop
-- Time `vmap` vs loop on a large batch
-- Implement inclusive prefix sum with `scan`; compare to a Python `for` loop
+- Fix value-dependent `if` with `static_argnames` or `lax.cond`
+- `example_fun(length, val)` with `static_argnames='length'`
+- Counted sum with `fori_loop`; runtime stop with `while_loop`
+- Replace `(x > 0) and (x < 3)` with `jnp.logical_and` under `jit`
 
 ### Key insight
 
-`vmap` is taught once here. Later episodes batch with a leading tensor dimension instead.
+Under `jit`, use `lax.*` for dynamic branches and loops; `static_argnames` when a Python branch must stay but recompiles are acceptable.
 
 ---
 
@@ -198,7 +204,7 @@ Return new params every step — never mutate in place. Batch with a leading dim
 flowchart LR
     E1[Ep1 Arrays] --> E2[Ep2 JIT]
     E2 --> E3[Ep3 AD]
-    E3 --> E4[Ep4 vmap/scan]
+    E3 --> E4[Ep4 control flow]
     E4 --> E5[Ep5 Pytrees]
     E5 --> P2[Part II Transformer]
 ```
