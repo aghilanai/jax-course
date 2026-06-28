@@ -1,4 +1,5 @@
-jax[cpu]>=0.4.28
+jax[cuda12]>=0.4.28
 matplotlib>=3.8
 jupyter>=1.0
 ipykernel>=6.29
+tiktoken>=0.7

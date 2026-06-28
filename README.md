@@ -27,6 +27,12 @@ Open this folder as the Cursor workspace (`File → Open Folder → jax-course`)
 | 4 | Control Flow with JIT | [solution](./ep04/solution.ipynb) | [student](./ep04/student.ipynb) |
 | 5 | Pytrees and SGD | [solution](./ep05/solution.ipynb) | [student](./ep05/student.ipynb) |
 
+## Part II — Chapter 2: GPT-2 Transformer
+
+| Episode | Topic | Instructor | Student |
+|---------|-------|------------|---------|
+| 6 | GPT-2 Transformer in Pure JAX | [solution](./ep06/solution.ipynb) | [student](./ep06/student.ipynb) |
+
 **Workflow:** Karpathy-style — one idea per episode, short exercise at the end.
 
 ### Regenerate student notebooks
