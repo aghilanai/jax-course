@@ -1,0 +1,25 @@
+---
+description: Use Jupyter %timeit for timing in course notebooks — never define time_ms helpers
+globs: **/*.ipynb
+alwaysApply: false
+---
+
+# Notebook timing
+
+Never define custom timing helpers (`time_ms`, `timeit.repeat` wrappers, etc.) in course notebooks.
+
+Use Jupyter's **`%timeit`** magic instead, matching existing episodes (ep01, ep02):
+
+```python
+jax.block_until_ready(fn(x))  # warm up jit cache when needed
+
+print("eager:")
+%timeit jax.block_until_ready(fn(x))
+
+print("jit:")
+%timeit jax.block_until_ready(fn_jit(x))
+```
+
+For pure-Python loops (no async JAX dispatch), `%timeit fn(x)` is fine.
+
+Do not add `import timeit` solely for benchmarking.

@@ -28,6 +28,7 @@ Author the complete episode in `solution.ipynb`:
 
 Follow course conventions from existing chapters:
 
+- **Timing:** use Jupyter `%timeit` — never define `time_ms` or other timing helpers
 - No explicit `dtype=float32` unless necessary
 - Capitalize shape letters in docs: `(N,)`, `(I, J)`, `(T,)`, `(V, V)`, `(S,)`
 - Episode 0: simple names (`x`, `m`) — no Noam suffix notation until ML episodes

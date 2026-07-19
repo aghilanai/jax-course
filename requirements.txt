@@ -1,4 +1,6 @@
 jax[cuda12]>=0.4.28
+flax>=0.10
+optax>=0.2
 matplotlib>=3.8
 jupyter>=1.0
 ipykernel>=6.29

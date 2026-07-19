@@ -1,210 +1,439 @@
 # ML Training Systems — Syllabus
 
-**Source:** [Full lesson plan artifact](https://claude.ai/public/artifacts/326f2023-cecb-45db-959b-c97a870cafdf)
-
-Train a transformer. Understand every byte. Five parts, 23 chapters, pure JAX from scratch — GPT-2 style architecture, GB200 FLOP accounting, real distributed training, scaling laws you fit yourself, pipeline and expert parallelism.
+Train a transformer. Understand every byte. Pure JAX from scratch — GPT-2 architecture, GB200 FLOP accounting, a real distributed training framework, scaling laws you fit yourself, pipeline and expert parallelism.
 
 **Stack:** JAX · XLA · NCCL · 0 training libs
+
+**Notebooks:** `epNN/solution.ipynb` (instructor) and `epNN/student.ipynb` (code along).
+
+---
+
+## Course length
+
+**22 episodes** across seven parts. Karpathy-style: one idea per episode, short exercise at the end.
+
+| Part | Episodes | Count |
+|------|----------|-------|
+| I — Pure JAX | 1–5 | 5 |
+| II — GPT-2 & single-GPU training | 6–9 | 4 |
+| III — FLOP accounting · GB200 | 10–12 | 3 |
+| IV — Collectives & sharding | 13–14 | 2 |
+| V — Distributed training framework | 15–17 | 3 |
+| VI — Scaling laws · Chinchilla · MuP | 18–20 | 3 |
+| VII — Pipeline & expert parallelism | 21–22 | 2 |
+
+**Why this order:** FLOP accounting (10–12) tells you what a run *should* cost. Collectives (13) and sharding (14) are separate episodes — you need to understand *communication* and *array placement* before wiring them into a trainer. Part V builds the `Trainer`; Part VI runs scaling sweeps through it. Pipeline and expert parallelism come last.
 
 ---
 
 ## Course map
 
-| Part | Title | Chapters |
+| Part | Title | Episodes |
 |------|-------|----------|
-| **I** | Pure JAX | 5 |
-| **II** | GPT-2 Transformer (no libs) | 5 |
-| **III** | FLOP Accounting · GB200 · Sharding | 5 |
-| **IV** | Scaling Laws · Chinchilla · MuP | 5 |
-| **V** | Pipeline & Expert Parallelism | 3 |
-
-**Notebooks:** `epNN/solution.ipynb` (instructor) and `epNN/student.ipynb` (code along). Part I maps `ep01`–`ep05` to Chapter 1.
+| **I** | Pure JAX | 1–5 |
+| **II** | GPT-2 Transformer & single-GPU training | 6–9 |
+| **III** | FLOP Accounting · GB200 | 10–12 |
+| **IV** | Collectives & Sharding | 13–14 |
+| **V** | Distributed Training Framework | 15–17 |
+| **VI** | Scaling Laws · Chinchilla · MuP | 18–20 |
+| **VII** | Pipeline & Expert Parallelism | 21–22 |
 
 ---
 
 ## Part I — Pure JAX
 
-### Foundation: The JAX Programming Model
+5 episodes · no ML framework
 
-5 chapters · no ML framework
+| Episode | Topic |
+|---------|-------|
+| [1](./ep01/solution.ipynb) | JAX as a Functional Array Accelerator |
+| [2](./ep02/solution.ipynb) | JIT, Tracing, and the Jaxpr |
+| [3](./ep03/solution.ipynb) | Automatic Differentiation |
+| [4](./ep04/solution.ipynb) | Control Flow with JIT |
+| [5](./ep05/solution.ipynb) | Pytrees and SGD |
 
-| Episode | Section | Topic |
-|---------|---------|-------|
-| [1](./ep01/solution.ipynb) | 1.1 | JAX as a Functional Array Accelerator |
-| [2](./ep02/solution.ipynb) | 1.2 | JIT, Tracing, and the Jaxpr |
-| [3](./ep03/solution.ipynb) | 1.3 | Automatic Differentiation |
-| [4](./ep04/solution.ipynb) | 1.4 | Control Flow with JIT |
-| [5](./ep05/solution.ipynb) | 1.5 | Pytrees and SGD |
+<details>
+<summary>Episodes 1–5 — summaries</summary>
 
----
+- **Ep1:** pure functions, PRNG keys, `jnp` vs NumPy, devices, async dispatch
+- **Ep2:** tracing, jaxpr, `jit`, static args, recompilation, `make_jaxpr`
+- **Ep3:** `grad`, `vjp`, `value_and_grad`, `jax.checkpoint` preview
+- **Ep4:** `lax.cond`, `lax.*_loop`, `lax.scan`, control flow under `jit`
+- **Ep5:** pytrees, `tree_map`, batched MLP, plain SGD, functional param updates
 
-## Episode 1 — JAX as a Functional Array Accelerator
-
-**Prerequisites:** Python, basic NumPy  
-**Hardware:** CPU (GPU optional for timing exercises)
-
-### Concepts
-
-- Pure functions as a design constraint — no hidden state, no in-place mutation
-- PRNG keys: `jax.random.key`, `split`, consume-on-use (no global RNG)
-- `jnp` vs NumPy: same API surface, completely different execution model
-- Broadcasting: `(B, D_out) + (D_out,)` bias add
-- Device placement: `jax.devices()`, default device, explicit `jax.device_put()`
-- Memory ownership — arrays live on device, copies are explicit
-- Asynchronous dispatch: JAX returns futures, `block_until_ready()`
-- Why JAX compiles rather than interprets: the case for deferred execution
-
-### Exercises
-
-- Write a matrix multiply in NumPy, port it to JAX, time both
-- `split` a key; verify reproducible draws from the same root key
-- Attempt an in-place mutation in JAX — observe the error
-- Print `jax.devices()`; show `(B, D_out) + (D_out,)` with `jnp.broadcast_shapes`
-- Benchmark `block_until_ready()` vs raw dispatch latency
-
-### Key insight
-
-The purity constraint is not a limitation — it is what makes compilation, differentiation, and parallelism composable. Every later chapter depends on this.
+</details>
 
 ---
 
-## Episode 2 — JIT, Tracing, and the Jaxpr
+## Part II — GPT-2 & single-GPU training
 
-**Prerequisites:** Episode 1  
-**Hardware:** CPU | Single GPU
+4 episodes · builds on [`transformer.py`](./transformer.py)
 
-### Concepts
+| Episode | Topic | Status |
+|---------|-------|--------|
+| [6](./ep06/solution.ipynb) | GPT-2 Transformer in Pure JAX | ✅ |
+| 7 | Training stability | planned |
+| 8 | Memory & mixed precision | planned |
+| 9 | Single-GPU performance & training harness | planned |
 
-- How transformations work: primitives, tracers, and the jaxpr as a side-effect-free IR
-- Pure functions: Python side effects (`append`, `print`) run at trace time but are absent from the jaxpr
-- Python control flow: branches taken depend on static attributes (`ndim`, `shape`) — not runtime values
-- Why `jit`: fuse op-by-op dispatch into one XLA-optimized kernel (SELU timing demo)
-- Tracing → StableHLO → compiled executable; warm-up and `block_until_ready()`
-- Compilation cache: retrace on shape change; static args trigger recompile per distinct value
-- **Why not `jit` everything:** `TracerBoolConversionError` when Python `if`/`while` depend on traced values
-- Partial `jit`: compile the hot inner body; use `jax.lax.cond` / array ops when possible
-- **Static vs traced:** `static_argnums`, `static_argnames`, decorator factory `@jax.jit(static_argnames=[...])`
-- JIT cache pitfalls: don't wrap `partial`/`lambda` in a loop — reuse the same function object
-- `jax.make_jaxpr()` and `jax.debug.print()` for inspection and debug output inside `jit`
+### Episode 6 — GPT-2 Transformer in Pure JAX
 
-### Exercises
+**Job:** Understand the model byte-by-byte. Minimal training — not a production recipe.
 
-- Print the jaxpr of a 3-layer MLP with `jax.make_jaxpr()`
-- Show a side effect that runs at trace time but is missing from the jaxpr
-- Trigger `TracerBoolConversionError` with value-dependent Python control flow
-- Fix a loop with `static_argnums` or `static_argnames`
-- Trigger a retrace by changing input shape — count compilations with a counter inside the function
-- Measure wall-clock time: first JIT call (compile + run) vs. steady state (warm up first)
-- Compare `jit(partial(f))` in a loop vs. reusing `jit(f)` — which recompiles?
+**Concepts:** parameter PyTrees; pre-LN block; causal MHA; GELU MLP; weight-tied LM head; init; forward; cross-entropy; plain SGD; generation; `count_params`.
 
-### Key insight
-
-JIT does not execute your Python code at runtime — it traces it once. Print statements inside jitted functions fire at trace time, not run time. This confusion catches everyone.
+**Deferred to Ep7+:** Adam, LR schedules, BF16, activation checkpointing, grad clip.
 
 ---
 
-## Episode 3 — Automatic Differentiation
+### Episode 7 — Training stability
 
-**Prerequisites:** Episodes 1–2  
-**Hardware:** CPU | Single GPU
+**Prereq:** [Ep6](./ep06/solution.ipynb) — forward pass, cross-entropy, plain SGD, Tiny Shakespeare demo.
 
-### Concepts
+**Job:** Loss goes down reliably on the Ep6 transformer — still pure JAX, no Optax. Replace the toy SGD loop with an optimizer and metrics you can trust before Ep8 chases memory and Ep9 wraps a harness.
 
-- `jax.grad`: scalar output only, returns a function
-- `jax.vjp`: brief — cotangents when the forward pass is not scalar
-- `jax.value_and_grad`: returns loss and gradient together (use this in training)
-- Gradient checkpointing with `jax.checkpoint` — trade compute for memory
+**Builds on:** Ep6 `train_step` · Ep5 `jax.tree.map` param updates · Ep3 `value_and_grad`.
 
-### Exercises
+**Concepts:**
+- **Adam as a PyTree** — separate `params` and `opt_state` (m, v per leaf); `adam_update(params, grads, state, step, config)`
+- **AdamW** — decoupled weight decay (not L2 folded into the gradient); β₁, β₂, ε as named hyperparams
+- **LR schedule** — linear warmup → cosine decay; pass global `step` into the jitted update
+- **Grad clipping** — global norm clip before the optimizer step; log ‖g‖ before/after clip
+- **Residual init scaling** — `1/√N` on residual projections (GPT-2 depth scaling Ep6 skipped)
+- **Train/val split** — hold out a contiguous slice of Tiny Shakespeare; never train on val tokens
+- **Metrics** — cross-entropy loss, **perplexity** `exp(loss)`, train vs val curves on one plot
+- **Stability guards** — `jnp.isfinite(loss)` check; skip or abort on NaN/inf steps
+- **Reproducibility** — fixed seed + deterministic batch order so “did my change help?” is answerable
 
-- Verify `grad` of `softmax(x) @ W` on a tiny example
-- Implement cross-entropy loss with `value_and_grad`; check against finite differences
-- Call `jax.vjp` on a vector-valued function with a cotangent
-- Wrap a deep function with `jax.checkpoint` and confirm the forward value is unchanged
+**Notebook arc:**
+1. Show Ep6 SGD plateau / instability on `demo_config` with longer runs
+2. Implement Adam (+ AdamW) and swap into `train_step`
+3. Add warmup + cosine schedule tied to `step`
+4. Add grad clip + residual scaling; compare loss curves
+5. Split corpus → log train/val loss and perplexity each N steps
 
-### Key insight
+**Exercise:** tune `(lr_peak, warmup_steps, clip_norm, weight_decay)` on `demo_config` until val perplexity drops for 200+ steps; plot train vs val.
 
-Use `value_and_grad` for scalar training losses. Reach for `vjp` when the forward pass returns multiple outputs or you need a custom cotangent.
+**Deferred to Ep8+:** BF16, activation checkpointing, gradient accumulation, `donate_argnums`, harness I/O, profiler.
 
----
-
-## Episode 4 — Control Flow with JIT
-
-**Prerequisites:** Episodes 1–3  
-**Hardware:** CPU | Single GPU
-
-**Source:** [Control flow and logical operators with JIT](https://docs.jax.dev/en/latest/control-flow.html)
-
-### Concepts
-
-- Python control flow under `jit` — compile-time path selection
-- `TracerBoolConversionError` — value-dependent `if` / `and` / `or`
-- `static_argnames` — concrete values at trace time; static unrolling
-- Value-dependent shapes — `jnp.ones((length,))` inside `jit`
-- Side effects: `print` shows tracers inside `jit`
-- Structured primitives: `lax.cond`, `lax.while_loop`, `lax.fori_loop`, `lax.scan`
-- `jit` vs `grad` compatibility table
-- `jnp.logical_and` vs Python `and` (no short-circuit)
-- `grad` with Python control flow (no `jit`) — works fine
-
-### Exercises
-
-- Fix value-dependent `if` with `static_argnames` or `lax.cond`
-- `example_fun(length, val)` with `static_argnames='length'`
-- Counted sum with `fori_loop`; runtime stop with `while_loop`
-- Replace `(x > 0) and (x < 3)` with `jnp.logical_and` under `jit`
-
-### Key insight
-
-Under `jit`, use `lax.*` for dynamic branches and loops; `static_argnames` when a Python branch must stay but recompiles are acceptable.
+**Key insight:** Stability is mostly optimizer state + schedule + measurement — not a bigger model. Get val perplexity falling before you optimize bytes or throughput.
 
 ---
 
-## Episode 5 — Pytrees and SGD
+### Episode 8 — Memory & mixed precision
 
-**Prerequisites:** Episodes 1–4  
-**Hardware:** CPU | Single GPU
+**Job:** Fit larger batch or sequence on one GPU; know where bytes go.
 
-### Concepts
-
-- Pytrees: nested `dict` of arrays — nodes vs leaves
-- `jax.tree.leaves`, `jax.tree.map`
-- 2-layer MLP `params` as `{0: {"w", "b"}, 1: {"w", "b"}}`
-- Batched forward: `x` shape `(B, D_in)` with broadcasting bias (no `vmap`)
-- Functional update: return new params, never mutate
-- SGD with a fixed learning rate — no optimizer state
-
-### Exercises
-
-- Print all leaf shapes in a 2-layer MLP `params` dict
-- Implement SGD update with `tree_map` in two lines
-- Run 20 batched training steps on `(B, D_in)` inputs; print the loss curve
-- `jit` a `train_step` that returns new params
-
-### Key insight
-
-Return new params every step — never mutate in place. Batch with a leading dimension on `x` and `y`; a fixed learning rate means `tree_map` is all you need for SGD.
+**Concepts:** memory budget (params + grads + Adam state + activations); `jax.checkpoint` on `block`; BF16 matmuls / FP32 master weights; `donate_argnums`; gradient accumulation.
 
 ---
 
-## Parts II–V (planned)
+### Episode 9 — Single-GPU performance & training harness
 
-| Part | Focus |
-|------|-------|
-| **II** | GPT-2 transformer from scratch — embeddings, attention, blocks, training loop, generation |
-| **III** | FLOP models, MFU, `jax.profiler`, `Mesh`, `PartitionSpec`, collectives |
-| **IV** | Scaling laws, Chinchilla, MuP, hyperparameter transfer |
-| **V** | Pipeline parallelism, expert parallelism (conceptual + worked examples) |
+**Job:** A 1-GPU trainer worth extending — not the final framework, but the core loop it will wrap.
+
+**Concepts:** `lax.scan` train loop; sequence-length bucketing; light `jax.profiler` intro; save/load PyTrees; val perplexity; reproducible config dict.
+
+**Feeds into Part V:** Ep9's `train_step`, checkpoint I/O, and metrics become methods on the distributed `Trainer` in Ep15–17.
 
 ---
 
-## Dependency graph (Part I)
+## Part III — FLOP accounting · GB200
+
+3 episodes · math and measurement on the Ep9 harness (single device)
+
+| Episode | Topic |
+|---------|-------|
+| 10 | Analytical FLOPs for GPT-2 |
+| 11 | MFU & measured throughput |
+| 12 | Memory bounds & arithmetic intensity |
+
+### Episode 10 — Analytical FLOPs for GPT-2
+
+Forward FLOPs/token — QKV projections, `S×S` attention, MLP matmuls, LM head; backward ≈ 2× forward; tie to Ep6 `count_params`.
+
+**Exercise:** hand-compute forward FLOPs for `gpt2_small` at `S=1024`.
+
+---
+
+### Episode 11 — MFU & measured throughput
+
+Tokens/sec from Ep9 → achieved FLOPs/sec → **MFU** = achieved / peak; GB200 peak BF16 specs; `jax.profiler` mapped to the Ep10 formula.
+
+**Exercise:** compute MFU from a timed training run.
+
+---
+
+### Episode 12 — Memory bounds & arithmetic intensity
+
+Why attention is memory-bound at moderate `S`; activation vs param bytes; where Ep8 checkpointing and BF16 land in the budget; FlashAttention as same math, different IO (footnote).
+
+**Exercise:** predict compute-bound vs memory-bound for a given `(B, S, H, L)`.
+
+**Key insight:** FLOP accounting is complete before you touch multiple devices — you need the formula and MFU baseline so distributed runs are debuggable.
+
+---
+
+## Part IV — Collectives & sharding
+
+2 episodes · distributed **primitives only** — no `Trainer` yet
+
+| Episode | Topic |
+|---------|-------|
+| 13 | Collectives |
+| 14 | Sharding operations |
+
+### Episode 13 — Collectives
+
+**Job:** Understand the communication primitives that every parallelism strategy composes.
+
+**Concepts:**
+- All-reduce, all-gather, reduce-scatter, broadcast — what each does to tensor shards
+- Bandwidth vs latency; ring vs tree (conceptual); NCCL under XLA
+- `jax.lax` collective ops (`psum`, `all_gather`, `ppermute`, …) on a 2+ device `Mesh`
+- Where each appears in training: grad all-reduce (DP), param/activation gather (TP), expert all-to-all (MoE preview)
+
+**Exercise:** sum a sharded vector with all-reduce; gather shards and verify against a replicated reference.
+
+**Key insight:** Collectives move bytes between devices; they don't decide *where* arrays live — that's sharding.
+
+---
+
+### Episode 14 — Sharding operations
+
+**Job:** Place arrays on a device mesh — the declarative layer above collectives.
+
+**Concepts:**
+- `Mesh` and named axes (`'data'`, `'model'`, …)
+- `PartitionSpec` — which tensor dim maps to which mesh axis
+- `jax.device_put` with `NamedSharding`; `jax.make_sharded_array`
+- `with_sharding_constraint` — pin intermediates inside `jit`
+- `shard_map` — SPMD functions over mesh axes
+- Sharding a parameter PyTree leaf-by-leaf; replicate vs shard worked examples on `(B, S, H)` activations
+
+**Exercise:** shard a `(B, S, H)` batch on `'data'` and a `(H, H)` weight on `'model'`; run a matmul under `shard_map` and inspect per-device shards.
+
+**Key insight:** Sharding is layout; collectives are synchronization. Data parallel and tensor parallel are different `PartitionSpec` choices plus the right collective in the backward pass.
+
+---
+
+## Part V — Distributed training framework
+
+3 episodes · build a real `Trainer` on top of Ep9, using Ep13–14 primitives
+
+Shared repo module (e.g. `trainer.py`) grows across these episodes:
+
+```
+Ep15  →  Trainer skeleton (single-device, sharding-ready)
+Ep16  →  + data parallel
+Ep17  →  + tensor parallel  →  framework ready for scaling sweeps
+```
+
+| Episode | Topic |
+|---------|-------|
+| 15 | Trainer skeleton |
+| 16 | Data parallel |
+| 17 | Tensor parallel |
+
+### Episode 15 — Trainer skeleton
+
+**Job:** Scaffolding that wraps Ep9's harness — not multi-device training yet.
+
+**Concepts:**
+- `TrainConfig` dataclass (model, batch, seq, opt, mesh shape, seed, paths)
+- `Trainer` class: init, `train_step`, `train` loop, checkpoint I/O, metrics logger
+- Single-device path first; mesh and `PartitionSpec` hooks wired but identity layout
+- Structure `train_step` so Ep16–17 swap in sharded params/grads without API changes
+
+**Exercise:** `Trainer` runs Ep9's Tiny Shakespeare loop on 1 device; save/load checkpoint round-trip.
+
+---
+
+### Episode 16 — Data parallel
+
+**Job:** First real multi-device training via the framework.
+
+**Concepts:**
+- Replicate params across `'data'` axis; shard batch on `B` (Ep14 layouts)
+- Gradient all-reduce inside `Trainer.train_step` (Ep13 collectives)
+- Global batch size = `local_batch × num_devices`; LR scaling note (optional)
+- Verify numerics: DP loss matches single-GPU at small scale
+
+**Exercise:** train Tiny Shakespeare on 2+ devices through `Trainer`; log tokens/sec and MFU from Ep11.
+
+**Key insight:** Data parallel doesn't change the math — the framework hides the collective behind the same `train_step` API.
+
+---
+
+### Episode 17 — Tensor parallel
+
+**Job:** Extend the framework so the model itself is sharded — needed before scaling-law sweeps at widths that don't fit on one GPU.
+
+**Concepts:**
+- Shard linear layers and attention heads on `H` (Megatron-style)
+- `PartitionSpec` on parameter PyTrees; TP + DP on the same `Mesh`
+- `Trainer` selects parallelism mode from config (`dp`, `tp`, `dp+tp`)
+
+**Exercise:** run a width sweep entry point (e.g. `trainer.run(config)`) at two hidden sizes that require TP; confirm checkpoint reload works.
+
+**Key insight:** By Ep17 end you have one framework, one config object, one launch path — Part VI scaling experiments are just config sweeps through this API.
+
+---
+
+## Part VI — Scaling laws · Chinchilla · MuP
+
+3 episodes · **uses the Part V `Trainer` for all experiments**
+
+| Episode | Topic |
+|---------|-------|
+| 18 | Scaling laws — fit loss vs compute, data, and model size |
+| 19 | Chinchilla — compute-optimal training |
+| 20 | MuP — width transfer and hyperparameter scaling |
+
+**Prerequisites:** Ep10–12 (FLOP budget per run) + Ep13–14 (primitives) + Ep15–17 (framework that launches multi-GPU sweeps).
+
+### Episode 18 — Scaling laws
+
+**Job:** Fit power-law curves from real training runs, not synthetic data.
+
+**Concepts:**
+- Sweep model width / depth / data tokens via `TrainConfig` grid
+- Log total training FLOPs (Ep10) vs final val loss / perplexity
+- Fit `L(C)`, `L(D)`, `L(N)`; isoFLOP curves
+- Framework handles: launch, checkpoint, metric aggregation across runs
+
+**Exercise:** fit `L(N)` from ≥3 widths using `Trainer`; plot on log-log axes.
+
+---
+
+### Episode 19 — Chinchilla
+
+**Job:** Find compute-optimal model size for a fixed FLOP budget using the framework.
+
+**Concepts:** Chinchilla prescription (train smaller models on more tokens); sweep along an isoFLOP line; read off optimal `N` and `D`.
+
+**Exercise:** given a FLOP budget, pick optimal `(N, D)` from your fitted curves and launch one confirmatory run via `Trainer`.
+
+---
+
+### Episode 20 — MuP
+
+**Job:** Transfer hyperparameters across width using the same launch path.
+
+**Concepts:** μP init and LR scaling; tune on a small model, zero-shot transfer to large width with TP; compare to naive LR transfer.
+
+**Exercise:** tune LR on `demo_config`; transfer to 2× width via `Trainer`; compare val loss at step 0 and after warmup.
+
+**Key insight:** Scaling laws are only meaningful on infrastructure you trust — that's why they come after the framework, not before.
+
+---
+
+## Part VII — Pipeline & expert parallelism
+
+2 episodes · extend the framework with schedule- and routing-based parallelism
+
+| Episode | Topic |
+|---------|-------|
+| 21 | Pipeline parallelism |
+| 22 | Expert parallelism (MoE) |
+
+**Prerequisites:** Ep17 framework (DP + TP) + Ep18–20 (you understand when scaling stops being about FLOPs alone).
+
+### Episode 21 — Pipeline parallelism
+
+Micro-batching, bubble overhead, GPipe vs 1F1B; integrate as a `Trainer` parallelism mode alongside DP/TP.
+
+### Episode 22 — Expert parallelism (MoE)
+
+Router, top-k experts, expert parallel all-to-all (Ep13 collectives); when MoE changes the scaling story from Ep18.
+
+---
+
+## Dependency graph
 
 ```mermaid
-flowchart LR
-    E1[Ep1 Arrays] --> E2[Ep2 JIT]
-    E2 --> E3[Ep3 AD]
-    E3 --> E4[Ep4 control flow]
-    E4 --> E5[Ep5 Pytrees]
-    E5 --> P2[Part II Transformer]
+flowchart TD
+    subgraph P1["Part I · Pure JAX"]
+        E1[Ep1] --> E2[Ep2] --> E3[Ep3] --> E4[Ep4] --> E5[Ep5]
+    end
+
+    subgraph P2["Part II · GPT-2 & 1-GPU training"]
+        E6[Ep6 Architecture] --> E7[Ep7 Stability]
+        E7 --> E8[Ep8 Memory / BF16]
+        E8 --> E9[Ep9 Harness]
+    end
+
+    subgraph P3["Part III · FLOP accounting"]
+        E10[Ep10 Analytical FLOPs] --> E11[Ep11 MFU]
+        E11 --> E12[Ep12 Memory bounds]
+    end
+
+    subgraph P4["Part IV · Collectives & sharding"]
+        E13[Ep13 Collectives] --> E14[Ep14 Sharding]
+    end
+
+    subgraph P5["Part V · Trainer framework"]
+        E15[Ep15 Skeleton] --> E16[Ep16 Data parallel]
+        E16 --> E17[Ep17 Tensor parallel]
+    end
+
+    subgraph P6["Part VI · Scaling laws"]
+        E18[Ep18 Fit scaling laws] --> E19[Ep19 Chinchilla]
+        E19 --> E20[Ep20 MuP]
+    end
+
+    subgraph P7["Part VII · Advanced parallel"]
+        E21[Ep21 Pipeline] --> E22[Ep22 Expert parallel]
+    end
+
+    E5 --> E6
+    E9 --> E10
+    E9 --> E15
+    E12 --> E13
+    E14 --> E15
+    E17 --> E18
+    E17 --> E21
+    E20 --> E21
 ```
+
+---
+
+## Design principles
+
+1. **Ep6 = what the model is.** Training tricks wait until the architecture is understood.
+2. **Ep7–9 = train reliably on one GPU** — harness becomes the core loop inside `Trainer`.
+3. **Ep10–12 = account for compute and memory** — before multiple devices, know expected FLOPs and MFU.
+4. **Ep13 = collectives, Ep14 = sharding** — separate episodes; communication vs layout.
+5. **Ep15–17 = build the framework** — skeleton → DP → TP; one config, one launch API.
+6. **Ep18–20 = scaling laws on real runs** — sweeps go through `Trainer`, not ad-hoc notebooks.
+7. **Ep21–22 = advanced parallelism** — PP and MoE extend the same framework.
+
+---
+
+## Framework API sketch (evolves Ep15 → Ep17)
+
+Reference shape for the repo module students build across Part V:
+
+```python
+@dataclass
+class TrainConfig:
+    model: GPTConfig
+    mesh_shape: tuple[int, ...]      # e.g. (dp, tp)
+    parallelism: Literal["dp", "tp", "dp_tp"]
+    batch_size: int                  # global
+    seq_len: int
+    max_steps: int
+    learning_rate: float
+    # ... checkpoint path, seed, log_every
+
+class Trainer:
+    def __init__(self, config: TrainConfig): ...
+    def train_step(self, state, batch) -> state: ...   # sharded
+    def train(self) -> RunMetrics: ...                  # full loop
+    def save(self, path): ...
+    def load(self, path): ...
+    @staticmethod
+    def sweep(configs: list[TrainConfig]) -> list[RunMetrics]: ...  # Ep18+
+```
+
+Part VI exercises are expressed as `TrainConfig` grids and `Trainer.sweep` — the curve fitting reads aggregated metrics, not raw notebook state.
