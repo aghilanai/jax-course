@@ -72,7 +72,7 @@ Train a transformer. Understand every byte. Pure JAX from scratch — GPT-2 arch
 | Episode | Topic | Status |
 |---------|-------|--------|
 | [6](./ep06/solution.ipynb) | GPT-2 Transformer in Pure JAX | ✅ |
-| 7 | Training stability | planned |
+| 7 | ML Optimizers | ✅ |
 | 8 | Memory & mixed precision | planned |
 | 9 | Single-GPU performance & training harness | planned |
 
@@ -86,37 +86,31 @@ Train a transformer. Understand every byte. Pure JAX from scratch — GPT-2 arch
 
 ---
 
-### Episode 7 — Training stability
+### Episode 7 — ML Optimizers
 
-**Prereq:** [Ep6](./ep06/solution.ipynb) — forward pass, cross-entropy, plain SGD, Tiny Shakespeare demo.
+**Prereq:** [Ep6](./ep06/solution.ipynb) — GPT-2 forward, cross-entropy, plain SGD.
 
-**Job:** Loss goes down reliably on the Ep6 transformer — still pure JAX, no Optax. Replace the toy SGD loop with an optimizer and metrics you can trust before Ep8 chases memory and Ep9 wraps a harness.
+**Job:** Implement first-order and matrix-aware optimizers as NamedTuple modules (`init` + `__call__`) and compare loss curves on the same GPT-2 model — still no Optax.
 
-**Builds on:** Ep6 `train_step` · Ep5 `jax.tree.map` param updates · Ep3 `value_and_grad`.
+**Code:** [`ep07/helpers.py`](./ep07/helpers.py) · [`optimizer_curves.png`](./ep07/optimizer_curves.png) · notebooks [`solution.ipynb`](./ep07/solution.ipynb) / [`student.ipynb`](./ep07/student.ipynb).
+
+**Builds on:** Ep6 transformer · Ep5 `jax.tree.map` · Ep3 `value_and_grad`.
 
 **Concepts:**
-- **Adam as a PyTree** — separate `params` and `opt_state` (m, v per leaf); `adam_update(params, grads, state, step, config)`
-- **AdamW** — decoupled weight decay (not L2 folded into the gradient); β₁, β₂, ε as named hyperparams
-- **LR schedule** — linear warmup → cosine decay; pass global `step` into the jitted update
-- **Grad clipping** — global norm clip before the optimizer step; log ‖g‖ before/after clip
-- **Residual init scaling** — `1/√N` on residual projections (GPT-2 depth scaling Ep6 skipped)
-- **Train/val split** — hold out a contiguous slice of Tiny Shakespeare; never train on val tokens
-- **Metrics** — cross-entropy loss, **perplexity** `exp(loss)`, train vs val curves on one plot
-- **Stability guards** — `jnp.isfinite(loss)` check; skip or abort on NaN/inf steps
-- **Reproducibility** — fixed seed + deterministic batch order so “did my change help?” is answerable
+- **NamedTuple modules** — GPT-2 and each optimizer: fields + `init` + `__call__`
+- **Implement in-notebook:** SGD → Momentum → RMSProp → AdamW → Muon (skip Shampoo)
+- **Pros/cons** before each optimizer; Distill + landscape demos for intuition
+- **Pluggable train loop** — `train(..., optimizer=...)` from `helpers.py`
 
-**Notebook arc:**
-1. Show Ep6 SGD plateau / instability on `demo_config` with longer runs
-2. Implement Adam (+ AdamW) and swap into `train_step`
-3. Add warmup + cosine schedule tied to `step`
-4. Add grad clip + residual scaling; compare loss curves
-5. Split corpus → log train/val loss and perplexity each N steps
+**Visualize:** [Distill — Momentum](https://distill.pub/2017/momentum/) ·
+[Gradient Optimizer Comparison](https://www.corefranciscopark.com/blog/gradient-optimizer-comparison) ·
+[`optimizer_curves.png`](./ep07/optimizer_curves.png)
 
-**Exercise:** tune `(lr_peak, warmup_steps, clip_norm, weight_decay)` on `demo_config` until val perplexity drops for 200+ steps; plot train vs val.
+**Still useful follow-ups (stability layer):** LR warmup + cosine, grad clipping, residual scaling ablations — can extend this episode or sit in a short coda before Ep8.
 
 **Deferred to Ep8+:** BF16, activation checkpointing, gradient accumulation, `donate_argnums`, harness I/O, profiler.
 
-**Key insight:** Stability is mostly optimizer state + schedule + measurement — not a bigger model. Get val perplexity falling before you optimize bytes or throughput.
+**Key insight:** Diagonal adaptive methods reshape the step coordinate-wise; Muon/Shampoo reshape *matrix* updates. On a tiny corpus, regularization and LR still decide whether val keeps dropping — read the whole curve.
 
 ---
 

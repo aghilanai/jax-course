@@ -5,3 +5,5 @@ matplotlib>=3.8
 jupyter>=1.0
 ipykernel>=6.29
 tiktoken>=0.7
+huggingface_hub>=0.23
+numpy>=1.26

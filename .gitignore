@@ -5,3 +5,4 @@ __pycache__/
 .ipynb_checkpoints/
 *.egg-info/
 .pytest_cache/
+ep07/optimizer_curves.png
