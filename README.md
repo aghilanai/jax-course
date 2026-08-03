@@ -7,8 +7,8 @@ Course materials for [**ML Training Systems**](./syllabus.md) — train a transf
 ```bash
 cd ~/Desktop/jax-course
 pip install -r requirements.txt
-```
 
+```
 Open this folder as the Cursor workspace (`File → Open Folder → jax-course`).
 
 ### Notebook IntelliSense

@@ -73,8 +73,8 @@ Train a transformer. Understand every byte. Pure JAX from scratch — GPT-2 arch
 |---------|-------|--------|
 | [6](./ep06/solution.ipynb) | GPT-2 Transformer in Pure JAX | ✅ |
 | 7 | ML Optimizers | ✅ |
-| 8 | Memory & mixed precision | planned |
-| 9 | Single-GPU performance & training harness | planned |
+| 8 | GPT-2 & memory intuition | ✅ |
+| 9 | Memory levers & training harness | planned |
 
 ### Episode 6 — GPT-2 Transformer in Pure JAX
 
@@ -114,21 +114,27 @@ Train a transformer. Understand every byte. Pure JAX from scratch — GPT-2 arch
 
 ---
 
-### Episode 8 — Memory & mixed precision
+### Episode 8 — GPT-2 & memory intuition
 
-**Job:** Fit larger batch or sequence on one GPU; know where bytes go.
+**Prereq:** [Ep6](./ep06/solution.ipynb) · [Ep7](./ep07/solution.ipynb) (AdamW optimizer bytes).
 
-**Concepts:** memory budget (params + grads + Adam state + activations); `jax.checkpoint` on `block`; BF16 matmuls / FP32 master weights; `donate_argnums`; gradient accumulation.
+**Job:** Walk a Flax NNX GPT-2 Small with shape annotations; derive params → training bytes (weights, grads, optimizer state).
+
+**Code:** [`gpt2.py`](./ep08/gpt2.py) (annotated model) · [param & memory sheet](https://docs.google.com/spreadsheets/d/1iC4j94aJiXy7Co1tflcDwPG3VSPCr_qmFJEv2BR26sE/edit?usp=sharing).
+
+**Concepts:** causal self-attention shapes; block params `12H²`; total `V·H + S·H + L·12H²`; ~16 bytes/param for BF16 train + FP32 AdamW state.
+
+**Deferred to Ep9:** checkpoint, BF16, `donate_argnums`, grad accumulation ([`ep09/deferred_memory_levers.py`](./ep09/deferred_memory_levers.py)).
 
 ---
 
-### Episode 9 — Single-GPU performance & training harness
+### Episode 9 — Memory levers & single-GPU training harness
 
-**Job:** A 1-GPU trainer worth extending — not the final framework, but the core loop it will wrap.
+**Job:** Shrink each memory bucket; wrap the train loop in a harness worth extending.
 
-**Concepts:** `lax.scan` train loop; sequence-length bucketing; light `jax.profiler` intro; save/load PyTrees; val perplexity; reproducible config dict.
+**Concepts:** `jax.checkpoint` on `block`; BF16 matmuls / FP32 master weights; `donate_argnums`; gradient accumulation; then `lax.scan` loop, checkpoint I/O, val perplexity, config dict, light profiler.
 
-**Feeds into Part V:** Ep9's `train_step`, checkpoint I/O, and metrics become methods on the distributed `Trainer` in Ep15–17.
+**Draft code:** [`ep09/deferred_memory_levers.py`](./ep09/deferred_memory_levers.py) (levers only — harness TBD).
 
 ---
 
